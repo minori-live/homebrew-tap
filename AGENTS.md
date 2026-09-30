@@ -7,6 +7,7 @@ a separate VERSION file, rebuild Heron, or track its development branch.
 - Keep casks in `Casks/`, automation in `.github/workflows/`, and maintainer
   documentation in `agents/docs/`.
 - Run tooling through `mise` and preserve `mise.lock` and `pnpm-lock.yaml`.
+- Reference GitHub Actions by their version tags when available, not commit hashes.
 - On Windows use PowerShell 7 with its normal profile.
 - Keep Node scripts in erasable TypeScript and validate with `mise run check`.
 - Run `mise run verify:release` to verify the actual published DMG without

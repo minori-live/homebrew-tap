@@ -20,12 +20,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out Tap
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install locked toolchain
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+        uses: jdx/mise-action@v4
         with:
           version: 2026.9.15
           cache: true
@@ -49,7 +49,7 @@ jobs:
       HOMEBREW_NO_ENV_HINTS: "1"
     steps:
       - name: Check out Tap
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
