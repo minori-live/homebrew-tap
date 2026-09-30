@@ -65,7 +65,11 @@ jobs:
         run: brew install --cask minori-live/tap/heron
 
       - name: Audit installed cask
-        run: brew audit --cask --online minori-live/tap/heron
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          plutil -p /Applications/Heron.app/Contents/Info.plist
+          brew audit --cask --online minori-live/tap/heron
 
       - name: Verify Universal executable and Gatekeeper acceptance
         run: |

@@ -15,7 +15,8 @@ cask "heron" do
   auto_updates true
   depends_on macos: :sonoma
 
-  app "Heron.app"
+  # Preserve the application name documented by Heron while matching the DMG's case.
+  app "heron.app", target: "Heron.app"
 
   caveats "Requires macOS 14.2 or later."
 end
