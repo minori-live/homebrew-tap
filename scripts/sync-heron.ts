@@ -11,29 +11,24 @@ import {
 } from "./release-policy.ts"
 import type { Asset, Release } from "./release-policy.ts"
 
-type Fetcher = (url: string) => Promise<Response>
 const caskPath = fileURLToPath(new URL("../Casks/heron.rb", import.meta.url))
 const maximumManifestBytes = 1024 * 1024
 
 // Public metadata and assets need no credentials. Never send the Tap write token
 // to upstream downloads or their redirect targets.
-const publicFetch: Fetcher = (url) => fetch(url, { signal: AbortSignal.timeout(300_000) })
+const publicFetch = (url: string) => fetch(url, { signal: AbortSignal.timeout(300_000) })
 
-async function latest(fetcher: Fetcher): Promise<Release> {
-  const response = await fetcher(latestReleaseUrl)
+async function latest(): Promise<Release> {
+  const response = await publicFetch(latestReleaseUrl)
   if (!response.ok) throw new Error(`Release lookup failed: HTTP ${response.status}`)
   return parseRelease(await response.json())
 }
 
-async function download(
-  asset: Asset,
-  fetcher: Fetcher,
-  collect: boolean
-): Promise<{ sha256: string; text: string }> {
+async function download(asset: Asset, collect: boolean): Promise<{ sha256: string; text: string }> {
   if (collect && asset.size > maximumManifestBytes) {
     throw new Error("SHA256SUMS exceeds the manifest size limit")
   }
-  const response = await fetcher(asset.url)
+  const response = await publicFetch(asset.url)
   if (!response.ok || !response.body) {
     throw new Error(`Asset download failed: ${asset.name}, HTTP ${response.status}`)
   }
@@ -54,37 +49,38 @@ async function download(
   return { sha256, text: collect ? Buffer.concat(chunks).toString("utf8") : "" }
 }
 
-export async function synchronize(options: {
-  path: string
-  check?: boolean
-  fetcher?: Fetcher
-}): Promise<{ changed: boolean; version: string }> {
-  const fetcher = options.fetcher ?? publicFetch
-  const content = await readFile(options.path, "utf8")
+async function synchronize(path: string): Promise<{ changed: boolean; version: string }> {
+  const content = await readFile(path, "utf8")
   const current = caskIdentity(content)
-  const release = await latest(fetcher)
+  const release = await latest()
   if (compareVersions(release.version, current.version) < 0) {
     throw new Error("Refusing to downgrade the cask")
   }
-  const manifest = await download(release.checksums, fetcher, true)
+  const manifest = await download(release.checksums, true)
   const expectedSha256 = checksumFor(manifest.text, release.dmg.name)
-  const dmg = await download(release.dmg, fetcher, false)
-  if (dmg.sha256 !== expectedSha256) throw new Error("DMG does not match SHA256SUMS")
-  const next = updateCask(content, release, dmg.sha256)
+  if (release.dmg.sha256 && release.dmg.sha256 !== expectedSha256) {
+    throw new Error("GitHub DMG digest does not match SHA256SUMS")
+  }
+  const next = updateCask(content, release, expectedSha256)
+  const changed = next !== content
+  // Repeated notifications compare release checksums without downloading the
+  // installer again. Verify the actual DMG only when publishing a new version.
+  if (changed) {
+    const dmg = await download(release.dmg, false)
+    if (dmg.sha256 !== expectedSha256) throw new Error("DMG does not match SHA256SUMS")
+  }
 
   // A new release or replacement asset during the download must not publish a
   // stale snapshot. A repeated notification or manual retry can reconcile it.
-  const confirmed = await latest(fetcher)
+  const confirmed = await latest()
   if (JSON.stringify(confirmed) !== JSON.stringify(release)) {
     throw new Error("Latest release changed during verification; retry synchronization")
   }
-  const changed = next !== content
-  if (options.check && changed) throw new Error("Cask does not match the latest stable release")
   if (changed) {
-    const temporaryPath = `${options.path}.sync-${process.pid}`
+    const temporaryPath = `${path}.sync-${process.pid}`
     try {
       await writeFile(temporaryPath, next, { flag: "wx" })
-      await rename(temporaryPath, options.path)
+      await rename(temporaryPath, path)
     } finally {
       await rm(temporaryPath, { force: true })
     }
@@ -94,14 +90,10 @@ export async function synchronize(options: {
 
 if (import.meta.main) {
   try {
-    const argumentsList = process.argv.slice(2)
-    if (
-      argumentsList.length > 1 ||
-      (argumentsList.length === 1 && argumentsList[0] !== "--check")
-    ) {
-      throw new Error("Usage: node scripts/sync-heron.ts [--check]")
+    if (process.argv.length > 2) {
+      throw new Error("Usage: node scripts/sync-heron.ts")
     }
-    const result = await synchronize({ path: caskPath, check: argumentsList[0] === "--check" })
+    const result = await synchronize(caskPath)
     if (process.env.GITHUB_OUTPUT) {
       await appendFile(
         process.env.GITHUB_OUTPUT,

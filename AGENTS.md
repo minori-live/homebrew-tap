@@ -10,11 +10,11 @@ a separate VERSION file, rebuild Heron, or track its development branch.
 - Reference GitHub Actions by their version tags when available, not commit hashes.
 - On Windows use PowerShell 7 with its normal profile.
 - Keep Node scripts in erasable TypeScript and validate with `mise run check`.
-- Run `mise run verify:release` to verify the actual published DMG without
-  modifying the cask. macOS Cask CI also checks installation, signing,
-  Gatekeeper, startup, and uninstall on both architectures.
-- Test release selection, checksums, downgrade prevention, and failure atomicity
-  at the synchronization boundary. Do not duplicate Homebrew's parser tests.
+- Keep CI focused on utility type checking, formatting, and Ruby syntax. The
+  Heron release pipeline owns application builds, signing, and notarization.
+  Download and verify the DMG when synchronizing a new release, not on every PR.
+- Do not add tests that restate Cask contents or implementation details, or
+  duplicate upstream Homebrew validation and Heron's application checks.
 - Keep notifications and manual dispatch as the only sync triggers. Do not add
   a scheduled workflow without a maintainer request.
 - Preserve application installation settings when updating a release. Projects

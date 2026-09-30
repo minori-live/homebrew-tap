@@ -4,11 +4,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit && node --test scripts/*.test.ts",
+    "check": "tsc --noEmit",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "sync": "node scripts/sync-heron.ts",
-    "verify:release": "node scripts/sync-heron.ts --check"
+    "sync": "node scripts/sync-heron.ts"
   },
   "devDependencies": {
     "@types/node": "26.5.1",

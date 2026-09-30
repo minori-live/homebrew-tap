@@ -14,6 +14,3 @@ run = ["pnpm format:check", "pnpm check"]
 
 [tasks.sync]
 run = "node scripts/sync-heron.ts"
-
-[tasks."verify:release"]
-run = "node scripts/sync-heron.ts --check"

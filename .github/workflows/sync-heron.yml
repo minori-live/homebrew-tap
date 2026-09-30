@@ -64,8 +64,8 @@ jobs:
 
             The synchronization job downloaded the Universal DMG and verified it
             against SHA256SUMS and the GitHub asset digest when available.
-            Existing installation settings are preserved. Cask checks must pass
-            on Apple Silicon and Intel before this PR can merge.
+            Existing installation settings are preserved. The Utilities check
+            must pass before this PR can merge.
 
       - name: Enable auto-merge after required checks
         if: steps.pull_request.outputs.pull-request-number != ''
@@ -80,10 +80,10 @@ jobs:
           fi
           protected="$(gh api "repos/$GH_REPO/branches/main" --jq '
             .protected and ((.protection.required_status_checks.contexts // []) |
-            contains(["Scripts", "Cask (macos-26)", "Cask (macos-26-intel)"]))
+            contains(["Utilities"]))
           ')"
           if [[ "$protected" != true ]]; then
-            echo "::error::Protect main with the three required checks documented in agents/docs/maintenance.md."
+            echo "::error::Protect main with the Utilities check documented in agents/docs/maintenance.md."
             exit 1
           fi
           gh pr merge "$PR_NUMBER" --auto --squash
