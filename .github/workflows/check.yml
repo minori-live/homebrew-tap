@@ -1,0 +1,90 @@
+name: Check Tap
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scripts:
+    name: Scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out Tap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install locked toolchain
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+        with:
+          version: 2026.9.15
+          cache: true
+
+      - name: Check synchronization tools
+        run: mise run check
+
+      - name: Verify cask against latest stable release
+        run: mise run verify:release
+
+  cask:
+    name: Cask (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-26-intel]
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
+    steps:
+      - name: Check out Tap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Update Homebrew and tap the tested checkout
+        run: |
+          brew update
+          brew tap minori-live/tap "$GITHUB_WORKSPACE"
+
+      - name: Check cask style
+        run: brew style Casks/heron.rb
+
+      - name: Install Heron
+        run: brew install --cask minori-live/tap/heron
+
+      - name: Audit installed cask
+        run: brew audit --cask --online minori-live/tap/heron
+
+      - name: Verify Universal executable and Gatekeeper acceptance
+        run: |
+          lipo -verify_arch arm64 x86_64 /Applications/Heron.app/Contents/MacOS/heron
+          codesign --verify --deep --strict --verbose=2 /Applications/Heron.app
+          spctl --assess --type execute --verbose=2 /Applications/Heron.app
+          xcrun stapler validate /Applications/Heron.app
+
+      - name: Check application startup
+        run: |
+          open -a /Applications/Heron.app
+          sleep 10
+          pgrep -f '/Applications/Heron[.]app/Contents/MacOS/heron'
+          osascript -e 'tell application "Heron" to quit'
+
+      - name: Uninstall Heron
+        if: always()
+        run: |
+          if brew list --cask minori-live/tap/heron >/dev/null 2>&1; then
+            brew uninstall --cask minori-live/tap/heron
+            test ! -e /Applications/Heron.app
+          fi

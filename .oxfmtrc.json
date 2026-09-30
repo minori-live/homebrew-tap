@@ -1,0 +1,7 @@
+{
+  "semi": false,
+  "trailingComma": "none",
+  "printWidth": 100,
+  "endOfLine": "lf",
+  "ignorePatterns": ["pnpm-lock.yaml", "mise.lock"]
+}
