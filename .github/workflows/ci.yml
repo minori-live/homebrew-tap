@@ -1,0 +1,48 @@
+name: Check utilities
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - scripts/**
+      - Casks/**
+      - .github/workflows/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.json
+      - .oxfmtrc.json
+      - mise.toml
+      - mise.lock
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  utilities:
+    name: Utilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out Tap
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install locked toolchain
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.9.15
+          cache: true
+
+      - name: Check utility types and formatting
+        run: mise run check
+
+      - name: Check cask Ruby syntax
+        run: ruby -c Casks/heron.rb

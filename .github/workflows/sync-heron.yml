@@ -1,0 +1,89 @@
+name: Sync Heron release
+
+on:
+  repository_dispatch:
+    types: [heron-release-published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-heron
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Update Heron cask
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out Tap
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Require synchronization credentials
+        env:
+          TAP_SYNC_TOKEN: ${{ secrets.TAP_SYNC_TOKEN }}
+        run: |
+          if [[ -z "$TAP_SYNC_TOKEN" ]]; then
+            echo "::error::Configure TAP_SYNC_TOKEN as described in agents/docs/maintenance.md."
+            exit 1
+          fi
+
+      - name: Install locked toolchain
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.9.15
+          cache: true
+
+      - name: Check synchronization tools
+        run: mise run check
+
+      - name: Verify and synchronize latest stable release
+        id: release
+        run: mise run sync
+
+      # A PAT allows PR checks to start without the approval needed for PRs
+      # created with GITHUB_TOKEN. This token can access only this Tap.
+      - name: Create or update release PR
+        id: pull_request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.TAP_SYNC_TOKEN }}
+          base: main
+          branch: dsh0416/update-heron
+          delete-branch: true
+          add-paths: Casks/heron.rb
+          commit-message: "chore(cask): update Heron to ${{ steps.release.outputs.version }}"
+          title: "Update Heron to ${{ steps.release.outputs.version }}"
+          body: |
+            Track the latest published stable Heron release.
+
+            The synchronization job downloaded the Universal DMG and verified it
+            against SHA256SUMS and the GitHub asset digest when available.
+            Existing installation settings are preserved. The Utilities check
+            must pass before this PR can merge.
+
+      - name: Enable auto-merge after required checks
+        if: steps.pull_request.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.TAP_SYNC_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pull_request.outputs.pull-request-number }}
+        run: |
+          if [[ "$(gh api "repos/$GH_REPO" --jq .allow_auto_merge)" != true ]]; then
+            echo "::error::Enable Allow auto-merge in the Tap repository settings."
+            exit 1
+          fi
+          protected="$(gh api "repos/$GH_REPO/branches/main" --jq '
+            .protected and ((.protection.required_status_checks.contexts // []) |
+            contains(["Utilities"]))
+          ')"
+          if [[ "$protected" != true ]]; then
+            echo "::error::Protect main with the Utilities check documented in agents/docs/maintenance.md."
+            exit 1
+          fi
+          gh pr merge "$PR_NUMBER" --auto --squash
