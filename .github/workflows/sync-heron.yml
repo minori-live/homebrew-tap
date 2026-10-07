@@ -36,7 +36,7 @@ jobs:
       - name: Install locked toolchain
         uses: jdx/mise-action@v5
         with:
-          version: 2026.10.2
+          version: 2026.10.3
           cache: true
 
       - name: Check synchronization tools
