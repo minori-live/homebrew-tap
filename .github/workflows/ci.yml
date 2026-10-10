@@ -41,7 +41,7 @@ jobs:
           version: 2026.10.4
           cache: true
 
-      - name: Check utility types and formatting
+      - name: Check utility types, formatting and release policy
         run: mise run check
 
       - name: Check cask Ruby syntax

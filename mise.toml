@@ -10,7 +10,7 @@ run = "pnpm install --frozen-lockfile"
 
 [tasks.check]
 depends = ["install"]
-run = ["pnpm format:check", "pnpm check"]
+run = ["pnpm format:check", "pnpm check", "pnpm test"]
 
 [tasks.sync]
 run = "node scripts/sync-heron.ts"

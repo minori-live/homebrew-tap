@@ -12,7 +12,8 @@ a separate VERSION file, rebuild Heron, or track its development branch.
 - Keep Node scripts in erasable TypeScript and validate with `mise run check`.
 - Keep CI focused on utility type checking, formatting, and Ruby syntax. The
   Heron release pipeline owns application builds, signing, and notarization.
-  Download and verify the DMG when synchronizing a new release, not on every PR.
+  Synchronization uses the DMG digest supplied by GitHub's Release API;
+  Homebrew verifies the installer when installing it.
 - Do not add tests that restate Cask contents or implementation details, or
   duplicate upstream Homebrew validation and Heron's application checks.
 - Keep notifications and manual dispatch as the only sync triggers. Do not add

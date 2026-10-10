@@ -5,14 +5,13 @@ export interface Asset {
   name: string
   url: string
   size: number
-  sha256: string | null
+  sha256: string
 }
 
 export interface Release {
   tag: string
   version: string
   dmg: Asset
-  checksums: Asset
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -50,14 +49,10 @@ function asset(assets: unknown[], tag: string, name: string): Asset {
   if (typeof item.size !== "number" || !Number.isSafeInteger(item.size) || item.size <= 0) {
     throw new Error(`Invalid release asset size: ${name}`)
   }
-  let sha256: string | null = null
-  if (item.digest !== null && item.digest !== undefined) {
-    if (typeof item.digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(item.digest)) {
-      throw new Error(`Invalid GitHub asset digest: ${name}`)
-    }
-    sha256 = item.digest.slice(7)
+  if (typeof item.digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(item.digest)) {
+    throw new Error(`Invalid GitHub asset digest: ${name}`)
   }
-  return { name, url, size: item.size, sha256 }
+  return { name, url, size: item.size, sha256: item.digest.slice(7) }
 }
 
 export function parseRelease(value: unknown): Release {
@@ -75,18 +70,8 @@ export function parseRelease(value: unknown): Release {
   return {
     tag,
     version,
-    dmg: asset(release.assets, tag, `Heron-${version}-mac-universal.dmg`),
-    checksums: asset(release.assets, tag, "SHA256SUMS")
+    dmg: asset(release.assets, tag, `Heron-${version}-mac-universal.dmg`)
   }
-}
-
-export function checksumFor(manifest: string, name: string): string {
-  const matches = manifest.split(/\r?\n/).flatMap((line) => {
-    const match = /^([a-fA-F0-9]{64}) [ *](.+)$/.exec(line)
-    return match?.[2] === name ? [match[1]!.toLowerCase()] : []
-  })
-  if (matches.length !== 1) throw new Error(`Expected exactly one SHA256SUMS entry: ${name}`)
-  return matches[0]!
 }
 
 export function caskIdentity(content: string): { version: string; sha256: string } {
@@ -100,8 +85,9 @@ export function caskIdentity(content: string): { version: string; sha256: string
   return { version, sha256: checksums[0]![1]! }
 }
 
-export function updateCask(content: string, release: Release, sha256: string): string {
+export function updateCask(content: string, release: Release): string {
   const current = caskIdentity(content)
+  const sha256 = release.dmg.sha256
   const comparison = compareVersions(release.version, current.version)
   if (comparison < 0) throw new Error("Refusing to downgrade the cask")
   if (comparison === 0 && current.sha256 !== sha256) {
