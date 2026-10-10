@@ -13,12 +13,11 @@ older notifications therefore synchronize the current release. Drafts,
 prereleases, incomplete assets, noncanonical URLs, downgrades, and changed bytes
 at the same version are rejected.
 
-For a new version, `scripts/sync-heron.ts` streams the Universal DMG and checks
-its size and SHA-256 against SHA256SUMS and available GitHub asset digests.
-Repeated notifications compare release checksums without downloading the DMG
-again. Release metadata must remain unchanged before the cask is replaced
-atomically. Only `version` and `sha256` are updated; installation settings remain
-intact.
+`scripts/sync-heron.ts` reads the Universal DMG's SHA-256 digest from GitHub's
+Releases API and writes it into the Cask. GitHub generates the digest when the
+asset is uploaded; Homebrew verifies the installer during installation.
+Release metadata must remain unchanged before the cask is replaced atomically.
+Only `version` and `sha256` are updated; installation settings remain intact.
 
 Successful synchronization creates or updates the single `dsh0416/update-heron`
 PR. Repeated notifications create no additional PRs or commits. Required CI
@@ -40,7 +39,7 @@ No custom GitHub App is required. Create a fine-grained personal access token:
 
 Heron uses the token only for repository dispatch. The Tap uses it to push its
 release branch, create/update the PR, and enable auto-merge. Public upstream
-metadata and downloads are fetched without credentials.
+metadata is fetched without credentials.
 
 The default GITHUB_TOKEN is limited to its own repository. A PAT is needed for
 the cross-repository notification and allows PR checks to run without the
@@ -97,14 +96,13 @@ mise install
 mise run check
 ```
 
-`check` runs formatting and TypeScript checks. CI also runs
+`check` runs formatting, TypeScript checks and release-policy tests. CI also runs
 `ruby -c Casks/heron.rb` to check Ruby syntax. Like
 [HashiCorp's Tap CI](https://github.com/hashicorp/homebrew-tap/blob/main/.github/workflows/ci.yml),
 Tap CI focuses on its utilities. It does not download, install, or start Heron.
 Heron's release pipeline owns building, signing, and notarization.
 
-`mise run sync` updates the local Cask from the latest stable Release and verifies
-the actual DMG when the version changes.
+`mise run sync` updates the local Cask from the latest stable Release's DMG digest.
 
 On macOS, tap the local checkout before checking or installing it:
 
