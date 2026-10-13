@@ -1,5 +1,24 @@
-export const upstream = "minori-live/heron"
-export const latestReleaseUrl = `https://api.github.com/repos/${upstream}/releases/latest`
+export interface Product {
+  upstream: string
+  assetName: (version: string) => string
+}
+
+export const heron: Product = {
+  upstream: "minori-live/heron",
+  assetName: (version) => `Heron-${version}-mac-universal.dmg`
+}
+
+export const heronPlugins: Product = {
+  upstream: "minori-live/heron-plugins",
+  assetName: (version) => `heron-plugins-${version}-macos-universal.dmg`
+}
+
+export const upstream = heron.upstream
+export const latestReleaseUrl = latestReleaseApiUrl(heron)
+
+export function latestReleaseApiUrl(product: Product): string {
+  return `https://api.github.com/repos/${product.upstream}/releases/latest`
+}
 
 export interface Asset {
   name: string
@@ -38,11 +57,11 @@ export function compareVersions(left: string, right: string): number {
   return 0
 }
 
-function asset(assets: unknown[], tag: string, name: string): Asset {
+function asset(product: Product, assets: unknown[], tag: string, name: string): Asset {
   const matches = assets.map(record).filter((item) => item.name === name)
   if (matches.length !== 1) throw new Error(`Expected exactly one release asset: ${name}`)
   const item = matches[0]!
-  const url = `https://github.com/${upstream}/releases/download/${tag}/${name}`
+  const url = `https://github.com/${product.upstream}/releases/download/${tag}/${name}`
   if (item.state !== "uploaded" || item.browser_download_url !== url) {
     throw new Error(`Release asset is not uploaded at its canonical URL: ${name}`)
   }
@@ -55,7 +74,7 @@ function asset(assets: unknown[], tag: string, name: string): Asset {
   return { name, url, size: item.size, sha256: item.digest.slice(7) }
 }
 
-export function parseRelease(value: unknown): Release {
+export function parseRelease(value: unknown, product: Product = heron): Release {
   const release = record(value)
   if (release.draft !== false || release.prerelease !== false) {
     throw new Error("Only published, non-prerelease releases may update the cask")
@@ -70,7 +89,7 @@ export function parseRelease(value: unknown): Release {
   return {
     tag,
     version,
-    dmg: asset(release.assets, tag, `Heron-${version}-mac-universal.dmg`)
+    dmg: asset(product, release.assets, tag, product.assetName(version))
   }
 }
 
@@ -78,7 +97,7 @@ export function caskIdentity(content: string): { version: string; sha256: string
   const versions = [...content.matchAll(/^  version "([^"]+)"$/gm)]
   const checksums = [...content.matchAll(/^  sha256 "([a-f0-9]{64})"$/gm)]
   if (versions.length !== 1 || checksums.length !== 1) {
-    throw new Error("Expected one pinned version and SHA-256 in Casks/heron.rb")
+    throw new Error("Expected one pinned version and SHA-256 in the cask")
   }
   const version = versions[0]![1]!
   versionParts(version)

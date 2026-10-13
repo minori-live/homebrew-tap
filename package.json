@@ -8,7 +8,8 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "test": "node --test scripts/*.test.ts",
-    "sync": "node scripts/sync-heron.ts"
+    "sync": "node scripts/sync-heron.ts",
+    "sync:heron-plugins": "node scripts/sync-heron-plugins.ts"
   },
   "devDependencies": {
     "@types/node": "26.5.1",

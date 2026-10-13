@@ -2,27 +2,39 @@
 
 ## Ownership and publication
 
-Heron's main repository owns VERSION, release tags, packaging, signing,
+Heron and Heron Plugins own VERSION, release tags, packaging, signing,
 notarization, and release assets. This Tap owns installation instructions and
-synchronization. Its Cask tracks the latest published stable Release selected by
-Heron's GitHub Releases API, not `main/VERSION`.
+synchronization. Each Cask tracks the latest published stable Release selected by
+that product's GitHub Releases API, not `main/VERSION`.
 
-Heron sends `heron-release-published` after a stable Release is published. The Tap
+| Product       | Dispatch event                    | Sync workflow            | Cask                     | Asset                                     |
+| ------------- | --------------------------------- | ------------------------ | ------------------------ | ----------------------------------------- |
+| Heron         | `heron-release-published`         | `sync-heron.yml`         | `Casks/heron.rb`         | `Heron-<ver>-mac-universal.dmg`           |
+| Heron Plugins | `heron-plugins-release-published` | `sync-heron-plugins.yml` | `Casks/heron-plugins.rb` | `heron-plugins-<ver>-macos-universal.dmg` |
+
+Each product sends its dispatch after a stable Release is published. The Tap
 treats that event only as a wake-up signal and queries upstream again. Delayed
 older notifications therefore synchronize the current release. Drafts,
 prereleases, incomplete assets, noncanonical URLs, downgrades, and changed bytes
 at the same version are rejected.
 
-`scripts/sync-heron.ts` reads the Universal DMG's SHA-256 digest from GitHub's
-Releases API and writes it into the Cask. GitHub generates the digest when the
-asset is uploaded; Homebrew verifies the installer during installation.
-Release metadata must remain unchanged before the cask is replaced atomically.
-Only `version` and `sha256` are updated; installation settings remain intact.
+`scripts/sync-heron.ts` and `scripts/sync-heron-plugins.ts` read the Universal
+DMG's SHA-256 digest from GitHub's Releases API and write it into the matching
+Cask. GitHub generates the digest when the asset is uploaded; Homebrew verifies
+the installer during installation. Release metadata must remain unchanged before
+the cask is replaced atomically. Only `version` and `sha256` are updated;
+installation settings remain intact.
 
-Successful synchronization creates or updates the single `dsh0416/update-heron`
-PR. Repeated notifications create no additional PRs or commits. Required CI
-checks gate auto-merge. Failures leave the published cask intact. The Tap can
-briefly lag a release; there is no scheduled reconciliation.
+Successful synchronization creates or updates the fixed PR branch for that
+product (`dsh0416/update-heron` or `dsh0416/update-heron-plugins`). Repeated
+notifications create no additional PRs or commits. Required CI checks gate
+auto-merge. Failures leave the published cask intact. The Tap can briefly lag a
+release; there is no scheduled reconciliation.
+
+Heron Plugins ships format-specific ZIPs that contain complete bundles under
+`bundles/`. The Tap uses one combined cask on the notarized Universal DMG so
+both VST3 and AUv2 install together, matching Homebrew's one-product-per-cask
+norm for a shared suite version.
 
 ## One-time credential setup
 
@@ -30,22 +42,32 @@ No custom GitHub App is required. Create a fine-grained personal access token:
 
 1. Set resource owner to `minori-live` and select only `homebrew-tap`.
 2. Grant **Contents: Read and write** and **Pull requests: Read and write**.
-   Metadata read access is implicit. No Heron repository write access is needed.
+   Metadata read access is implicit. No Heron or Heron Plugins repository write
+   access is needed.
 3. Complete organization approval if the token is shown as pending.
-4. Add the token as Actions secret `TAP_SYNC_TOKEN` in both `minori-live/heron`
-   and `minori-live/homebrew-tap`, or use an organization secret visible to
-   exactly these two repositories.
-5. Renew the token before expiration and replace both secrets.
+4. Add the token as Actions secret `TAP_SYNC_TOKEN` in `minori-live/heron`,
+   `minori-live/heron-plugins`, and `minori-live/homebrew-tap`, or use an
+   organization secret visible to exactly these repositories.
+5. Renew the token before expiration and replace the secrets.
 
-Heron uses the token only for repository dispatch. The Tap uses it to push its
-release branch, create/update the PR, and enable auto-merge. Public upstream
-metadata is fetched without credentials.
+Upstream repositories use the token only for repository dispatch. The Tap uses
+it to push its release branch, create/update the PR, and enable auto-merge.
+Public upstream metadata is fetched without credentials.
 
 The default GITHUB_TOKEN is limited to its own repository. A PAT is needed for
 the cross-repository notification and allows PR checks to run without the
 approval required for PRs created using GITHUB_TOKEN. See
 [GitHub's token documentation](https://docs.github.com/en/actions/concepts/security/github_token)
 and [dispatch permissions](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
+
+## Upstream notify workflows
+
+Heron already ships `.github/workflows/notify-homebrew-tap.yml`, which posts
+`heron-release-published`. Heron Plugins needs the companion workflow that posts
+`heron-plugins-release-published`. The exact file to add is recorded in
+[heron-plugins-notify-homebrew-tap.yml](heron-plugins-notify-homebrew-tap.yml);
+copy it to `minori-live/heron-plugins/.github/workflows/notify-homebrew-tap.yml`
+and document the Tap under that repository's install docs once merged.
 
 ## Required repository settings
 
@@ -57,9 +79,9 @@ After merging the initial Tap files and running **Check utilities** once:
 3. Require the branch to be up to date before merging. Leave required approving
    reviews disabled if release PRs should merge without manual review.
 
-Use the exact check name above. Keep the fixed automation branch outside the
-protected branch pattern: updating its PR may require a force push. Before
-requesting auto-merge, the sync workflow checks that auto-merge is enabled and
+Use the exact check name above. Keep the fixed automation branches outside the
+protected branch pattern: updating their PRs may require a force push. Before
+requesting auto-merge, each sync workflow checks that auto-merge is enabled and
 the required `Utilities` check protects main. Missing settings fail the run and leave
 the PR available for review.
 
@@ -70,19 +92,20 @@ replacements require investigation and a reviewed change.
 
 ## Bootstrap and manual retry
 
-Both dispatch workflows must be on their repositories' default branches. The
-initial cask uses the published Heron 0.5.2 DMG; no new Heron release is needed.
+Dispatch workflows must be on their repositories' default branches.
 
 Run from any GitHub-authenticated checkout:
 
 ```sh
 gh workflow run sync-heron.yml --repo minori-live/homebrew-tap --ref main
+gh workflow run sync-heron-plugins.yml --repo minori-live/homebrew-tap --ref main
 ```
 
-To retry Heron's notification instead:
+To retry an upstream notification instead:
 
 ```sh
 gh workflow run notify-homebrew-tap.yml --repo minori-live/heron --ref main
+gh workflow run notify-homebrew-tap.yml --repo minori-live/heron-plugins --ref main
 ```
 
 Both paths reconcile the current stable Release without a manually supplied
@@ -97,23 +120,32 @@ mise run check
 ```
 
 `check` runs formatting, TypeScript checks and release-policy tests. CI also runs
-`ruby -c Casks/heron.rb` to check Ruby syntax. Like
+`ruby -c` on every file under `Casks/`. Like
 [HashiCorp's Tap CI](https://github.com/hashicorp/homebrew-tap/blob/main/.github/workflows/ci.yml),
-Tap CI focuses on its utilities. It does not download, install, or start Heron.
-Heron's release pipeline owns building, signing, and notarization.
+Tap CI focuses on its utilities. It does not download, install, or start Heron
+or the plug-ins. Upstream release pipelines own building, signing, and
+notarization.
 
-`mise run sync` updates the local Cask from the latest stable Release's DMG digest.
+```sh
+mise run sync
+mise run sync:heron-plugins
+```
+
+These update each local Cask from the latest stable Release's DMG digest.
 
 On macOS, tap the local checkout before checking or installing it:
 
 ```sh
 brew tap minori-live/tap "$PWD"
-brew style Casks/heron.rb
+brew style Casks/heron.rb Casks/heron-plugins.rb
+brew audit --cask --new --online minori-live/tap/heron
+brew audit --cask --new --online minori-live/tap/heron-plugins
 brew install --cask minori-live/tap/heron
-brew audit --cask --online minori-live/tap/heron
+brew install --cask minori-live/tap/heron-plugins
 brew uninstall --cask minori-live/tap/heron
+brew uninstall --cask minori-live/tap/heron-plugins
 ```
 
 Untap an existing minori.live Tap first, or Homebrew will keep its previous
-checkout. Manual installation checks need a Mac; audio-device validation also
-needs the relevant devices.
+checkout. Manual installation checks need a Mac; plug-in host validation also
+needs a DAW.
