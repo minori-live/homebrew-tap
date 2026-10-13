@@ -1,6 +1,6 @@
 cask "heron-plugins" do
-  version "0.7.1"
-  sha256 "c5ba3ab0744abfeb929ccdc1f782d9ada8511dd9203fe5c9dfff5650d580efdd"
+  version "0.8.1"
+  sha256 "8d0dedb4d142565c58b30c5d65a832a82bf4480c6ddc6c4afa7f7264faef9bb8"
 
   url "https://github.com/minori-live/heron-plugins/releases/download/v#{version}/heron-plugins-#{version}-macos-universal.dmg"
   name "Heron Plugins"
