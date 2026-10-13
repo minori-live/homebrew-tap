@@ -1,4 +1,3 @@
-# Copy to minori-live/heron-plugins/.github/workflows/notify-homebrew-tap.yml
 name: Notify Homebrew tap
 
 on:
