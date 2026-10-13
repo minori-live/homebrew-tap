@@ -1,15 +1,15 @@
 import { appendFile, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
-import { latestReleaseUrl, parseRelease, updateCask } from "./release-policy.ts"
+import { heron, latestReleaseApiUrl, parseRelease, updateCask } from "./release-policy.ts"
 import type { Release } from "./release-policy.ts"
 
 const caskPath = fileURLToPath(new URL("../Casks/heron.rb", import.meta.url))
 const publicFetch = (url: string) => fetch(url, { signal: AbortSignal.timeout(300_000) })
 
 async function latest(): Promise<Release> {
-  const response = await publicFetch(latestReleaseUrl)
+  const response = await publicFetch(latestReleaseApiUrl(heron))
   if (!response.ok) throw new Error(`Release lookup failed: HTTP ${response.status}`)
-  return parseRelease(await response.json())
+  return parseRelease(await response.json(), heron)
 }
 
 async function synchronize(path: string): Promise<{ changed: boolean; version: string }> {

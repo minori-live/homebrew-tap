@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { caskIdentity, parseRelease, updateCask } from "./release-policy.ts"
+import { caskIdentity, heron, heronPlugins, parseRelease, updateCask } from "./release-policy.ts"
 
 const oldDigest = "a".repeat(64)
 const newDigest = "b".repeat(64)
@@ -11,8 +11,8 @@ const cask = `cask "example" do
 end
 `
 
-function release(version = "1.1.0", digest = newDigest) {
-  const name = `Heron-${version}-mac-universal.dmg`
+function release(version = "1.1.0", digest = newDigest, product = heron) {
+  const name = product.assetName(version)
   return {
     draft: false,
     prerelease: false,
@@ -21,7 +21,7 @@ function release(version = "1.1.0", digest = newDigest) {
       {
         name,
         state: "uploaded",
-        browser_download_url: `https://github.com/minori-live/heron/releases/download/v${version}/${name}`,
+        browser_download_url: `https://github.com/${product.upstream}/releases/download/v${version}/${name}`,
         size: 123,
         digest: `sha256:${digest}`
       }
@@ -36,6 +36,14 @@ test("uses the GitHub DMG digest without a checksum catalog", () => {
     next.replace('  version "1.1.0"', '  version "1.0.0"').replace(newDigest, oldDigest),
     cask
   )
+})
+
+test("synchronizes the Heron Plugins universal DMG digest", () => {
+  const next = updateCask(
+    cask,
+    parseRelease(release("1.1.0", newDigest, heronPlugins), heronPlugins)
+  )
+  assert.deepEqual(caskIdentity(next), { version: "1.1.0", sha256: newDigest })
 })
 
 test("a repeated release leaves the Cask unchanged", () => {
