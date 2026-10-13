@@ -31,11 +31,6 @@ notifications create no additional PRs or commits. Required CI checks gate
 auto-merge. Failures leave the published cask intact. The Tap can briefly lag a
 release; there is no scheduled reconciliation.
 
-Heron Plugins ships format-specific ZIPs that contain complete bundles under
-`bundles/`. The Tap uses one combined cask on the notarized Universal DMG so
-both VST3 and AUv2 install together, matching Homebrew's one-product-per-cask
-norm for a shared suite version.
-
 ## One-time credential setup
 
 No custom GitHub App is required. Create a fine-grained personal access token:
@@ -59,15 +54,6 @@ the cross-repository notification and allows PR checks to run without the
 approval required for PRs created using GITHUB_TOKEN. See
 [GitHub's token documentation](https://docs.github.com/en/actions/concepts/security/github_token)
 and [dispatch permissions](https://docs.github.com/en/rest/repos/repos#create-a-repository-dispatch-event).
-
-## Upstream notify workflows
-
-Heron already ships `.github/workflows/notify-homebrew-tap.yml`, which posts
-`heron-release-published`. Heron Plugins needs the companion workflow that posts
-`heron-plugins-release-published`. The exact file to add is recorded in
-[heron-plugins-notify-homebrew-tap.yml](heron-plugins-notify-homebrew-tap.yml);
-copy it to `minori-live/heron-plugins/.github/workflows/notify-homebrew-tap.yml`
-and document the Tap under that repository's install docs once merged.
 
 ## Required repository settings
 
