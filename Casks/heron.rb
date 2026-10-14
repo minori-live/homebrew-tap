@@ -1,6 +1,6 @@
 cask "heron" do
-  version "0.8.1"
-  sha256 "43245cb98dbde4199ef69929f72fbb7a8196ad519928c0b2c690d599b901ad03"
+  version "0.8.2"
+  sha256 "2147ad3526a00b190c6c9ffdc5e847f842c674d6529c68e31cb6f27319e333ba"
 
   url "https://github.com/minori-live/heron/releases/download/v#{version}/Heron-#{version}-mac-universal.dmg"
   name "Heron"
