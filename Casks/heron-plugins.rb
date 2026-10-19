@@ -1,6 +1,6 @@
 cask "heron-plugins" do
-  version "0.8.1"
-  sha256 "8d0dedb4d142565c58b30c5d65a832a82bf4480c6ddc6c4afa7f7264faef9bb8"
+  version "0.9.0"
+  sha256 "a6253e34c4754696e237918c7c6efd1fd6b63624009591bc517210f3d75bbbb6"
 
   url "https://github.com/minori-live/heron-plugins/releases/download/v#{version}/heron-plugins-#{version}-macos-universal.dmg"
   name "Heron Plugins"
@@ -18,11 +18,13 @@ cask "heron-plugins" do
   audio_unit_plugin "Audio Units/Heron EQ.component"
   audio_unit_plugin "Audio Units/Heron Gain.component"
   audio_unit_plugin "Audio Units/Heron Metronome.component"
+  audio_unit_plugin "Audio Units/Heron Repitch.component"
   audio_unit_plugin "Audio Units/Heron Revox.component"
   audio_unit_plugin "Audio Units/Heron Sine.component"
   vst3_plugin "VST3/Heron EQ.vst3"
   vst3_plugin "VST3/Heron Gain.vst3"
   vst3_plugin "VST3/Heron Metronome.vst3"
+  vst3_plugin "VST3/Heron Repitch.vst3"
   vst3_plugin "VST3/Heron Revox.vst3"
   vst3_plugin "VST3/Heron Sine.vst3"
 
@@ -30,11 +32,13 @@ cask "heron-plugins" do
     "~/Library/Audio/Plug-Ins/Components/Heron EQ.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Gain.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Metronome.component",
+    "~/Library/Audio/Plug-Ins/Components/Heron Repitch.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Revox.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Sine.component",
     "~/Library/Audio/Plug-Ins/VST3/Heron EQ.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Gain.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Metronome.vst3",
+    "~/Library/Audio/Plug-Ins/VST3/Heron Repitch.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Revox.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Sine.vst3",
   ]
