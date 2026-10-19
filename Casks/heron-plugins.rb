@@ -18,11 +18,13 @@ cask "heron-plugins" do
   audio_unit_plugin "Audio Units/Heron EQ.component"
   audio_unit_plugin "Audio Units/Heron Gain.component"
   audio_unit_plugin "Audio Units/Heron Metronome.component"
+  audio_unit_plugin "Audio Units/Heron Repitch.component"
   audio_unit_plugin "Audio Units/Heron Revox.component"
   audio_unit_plugin "Audio Units/Heron Sine.component"
   vst3_plugin "VST3/Heron EQ.vst3"
   vst3_plugin "VST3/Heron Gain.vst3"
   vst3_plugin "VST3/Heron Metronome.vst3"
+  vst3_plugin "VST3/Heron Repitch.vst3"
   vst3_plugin "VST3/Heron Revox.vst3"
   vst3_plugin "VST3/Heron Sine.vst3"
 
@@ -30,11 +32,13 @@ cask "heron-plugins" do
     "~/Library/Audio/Plug-Ins/Components/Heron EQ.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Gain.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Metronome.component",
+    "~/Library/Audio/Plug-Ins/Components/Heron Repitch.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Revox.component",
     "~/Library/Audio/Plug-Ins/Components/Heron Sine.component",
     "~/Library/Audio/Plug-Ins/VST3/Heron EQ.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Gain.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Metronome.vst3",
+    "~/Library/Audio/Plug-Ins/VST3/Heron Repitch.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Revox.vst3",
     "~/Library/Audio/Plug-Ins/VST3/Heron Sine.vst3",
   ]
