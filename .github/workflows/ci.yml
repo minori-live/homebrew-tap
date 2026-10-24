@@ -38,7 +38,7 @@ jobs:
       - name: Install locked toolchain
         uses: jdx/mise-action@v5
         with:
-          version: 2026.10.18
+          version: 2026.10.19
           cache: true
 
       - name: Check utility types, formatting and release policy
